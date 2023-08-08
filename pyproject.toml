@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "pykmcmc"
+version = "0.1.0a1"
+description = ""
+authors = ["Nathaniel D. Hoffman <dene@cmu.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.11"
+numpy = "^1.25.2"
+uproot = "^5.0.10"
+scipy = "^1.11.1"
+docopt-ng = "^0.9.0"
+rich = "^13.5.2"
+codetiming = "^1.4.0"
+jax = {extras = ["cpu"], version = "^0.4.14"}
+emcee = "^3.1.4"
+matplotlib = "^3.7.2"
+corner = "^2.2.2"
+tqdm = "^4.65.0"
+h5py = "^3.9.0"
+prism-plot = "^1.6"
+schwimmbad = "^0.3.2"
+enrich = "^1.2.7"
+arviz = "^0.16.1"
+
+[tool.poetry.scripts]
+kmcmc = 'pykmcmc.mcmc:run_mcmc'
+kplot = 'pykmcmc.plotter:plot_mcmc'
+
+
+[tool.poetry.group.dev.dependencies]
+bpython = "^0.24"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
