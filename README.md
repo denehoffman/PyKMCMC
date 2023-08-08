@@ -181,7 +181,7 @@ At a bare minimum, `kmcmc` requires two files to run, a data file and a Monte Ca
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE.md).
+This project is licensed under the [MIT License](LICENSE).
 
 ## Tasks
 
