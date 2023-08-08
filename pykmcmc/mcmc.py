@@ -54,7 +54,7 @@ from docopt import docopt
 
 def run_mcmc():
     args = docopt(__doc__)
-    console = Console(quiet=args['--silent'])
+    console = Console(quiet=args['--silent'], record=True)
     error_console = Console(stderr=True, style="bold red")
     data_path = Path(args['<data>'])
     if not data_path.exists():
@@ -83,6 +83,7 @@ def run_mcmc():
     branch_table.add_row("Mass", args['--mass-branch'])
     branch_table.add_row("Cos(θ)", args['--cos-theta-branch'])
     branch_table.add_row("ϕ", args['--phi-branch'])
+    branch_table.add_row("Weight", args['--weight-branch'])
     console.print(branch_table)
     # Set number of parameters
     ndim = 23
@@ -258,3 +259,4 @@ def run_mcmc():
         console.print(best_pars_dict)
         console.rule("MCMC Complete")
         console.print(f"Chain written to {output_path}")
+        console.save_text("pymcmc_log.txt")
