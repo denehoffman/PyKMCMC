@@ -5,7 +5,6 @@ import prism
 import emcee
 import corner
 import matplotlib.pyplot as plt
-az.rcparams.rcParams['plot.max_subplots'] = 23
 
 latex_labels = [
         r"$f_0(980)\ \Re$",
