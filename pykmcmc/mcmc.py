@@ -12,6 +12,7 @@ Options:
     --mass-branch <branch>       Branch name for mass [default: M_FinalState]
     --cos-theta-branch <branch>  Branch name for cos theta [default: HX_CosTheta]
     --phi-branch <branch>        Branch name for phi [default: HX_Phi]
+    --weight-branch <branch>     Branch name for event weight [default: Weight]
     --ncores <cores>             Number of cores [default: 1]
     --mpi                        Enable MPI
     --silent                     Silent mode (disable output)
