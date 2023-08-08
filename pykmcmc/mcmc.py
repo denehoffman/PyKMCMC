@@ -92,15 +92,17 @@ def run_mcmc():
     # Load in the data file and accepted Monte Carlo
     with console.status("Loading DATA..."):
         data = pykmcmc.reader.read_file(data_path,
-                                    args['--mass-branch'],
-                                    args['--cos-theta-branch'],
-                                    args['--phi-branch'])
+                                        args['--mass-branch'],
+                                        args['--cos-theta-branch'],
+                                        args['--phi-branch'],
+                                        args['--weight-branch'])
         console.print("Loaded DATA")
     with console.status("Loading ACCMC..."):
         accmc = pykmcmc.reader.read_file(accmc_path,
-                                     args['--mass-branch'],
-                                     args['--cos-theta-branch'],
-                                     args['--phi-branch'])
+                                         args['--mass-branch'],
+                                         args['--cos-theta-branch'],
+                                         args['--phi-branch'],
+                                         args['--weight-branch'])
         console.print("Loaded ACCMC")
 
     ngen = args['--ngen']
