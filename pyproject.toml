@@ -6,7 +6,7 @@ authors = ["Nathaniel D. Hoffman <dene@cmu.edu>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "~3.11"
+python = "<3.12,>=3.6.8"
 numpy = "^1.25.2"
 uproot = "^5.0.10"
 scipy = "^1.11.1"
