@@ -64,14 +64,16 @@ def to_arviz(filename):
 
 def plot_mcmc():
     with az.rc_context(rc={'plot.max_subplots': None}):
-        df, sampler = to_arviz('demo.h5')
-        df_burned = df.sel(draw=slice(200, None))
+        df, sampler = to_arviz('data/weighted_demo.h5')
+        samples = sampler.get_chain()
+        n_samples = samples.shape[0]
+        burn_in = int(n_samples * 0.2)
+        df_burned = df.sel(draw=slice(burn_in, None))
         lls = sampler.get_log_prob(flat=True)
         chain = sampler.get_chain(flat=True)
         i_best = np.argmax(lls)
         best_pars = chain[i_best]
         labeller = azl.MapLabeller(var_name_map={k: v for k, v in zip(var_names, latex_labels)})
-        # corner.corner(df, var_names=var_names[:3])
         axes = az.plot_trace(df, labeller=labeller, combined=True)
         for i in range(23):
             axes[i, 0].axvline(best_pars[i])
