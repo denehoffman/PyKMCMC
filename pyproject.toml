@@ -6,7 +6,7 @@ authors = ["Nathaniel D. Hoffman <dene@cmu.edu>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "<3.12,>=3.6.8"
+python = "<3.12,>=3.9"
 numpy = "^1.25.2"
 uproot = "^5.0.10"
 scipy = "^1.11.1"
@@ -23,6 +23,7 @@ prism-plot = "^1.6"
 schwimmbad = "^0.3.2"
 enrich = "^1.2.7"
 arviz = "^0.16.1"
+tomli = "^2.0.1"
 
 [tool.poetry.scripts]
 kmcmc = 'pykmcmc.mcmc:run_mcmc'
