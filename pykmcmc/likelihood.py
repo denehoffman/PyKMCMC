@@ -12,7 +12,7 @@ class Likelihood:
         cx_beta_r = amp.Amplitude.pars_to_cx_beta_r(*pars)
         data_sum = self.data.calc_log(cx_beta_r).block_until_ready()
         accmc_sum = self.accmc.calc(cx_beta_r).block_until_ready()
-        return -(data_sum - (4 * jnp.pi * (2.0**2 - 1.0**2) / self.n_gen) * accmc_sum) # + self.log_n_factorial
+        return -(data_sum - (4 * jnp.pi * (2.0**2 - 1.0**2) / self.n_gen) * accmc_sum) + self.log_n_factorial
 
 
     def log_likelihood(self, pars):

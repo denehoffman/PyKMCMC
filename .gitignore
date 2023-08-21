@@ -161,6 +161,10 @@ cython_debug/
 
 figures/
 data/
-tests/*.root
+tests/
 .python-version
 pyrightconfig.json
+*.svg
+*.h5
+config.toml
+*.txt
