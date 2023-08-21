@@ -165,16 +165,44 @@ def run_mcmc():
         (emcee.moves.DEMove(gamma0=1), 0.1), # jump
         (emcee.moves.DESnookerMove(), 0.1),
     ]
-    if args['--config']:
-        config_path = Path(args['--config'])
+    default_config = """
+[[move]]
+name = "StretchMove"
+parameters = { }
+weight = 0.3
+
+[[move]]
+name = "DEMove"
+parameters = { sigma = 1e-3 }
+weight = 0.4
+
+[[move]]
+name = "DEMove"
+parameters = { sigma = 10 }
+weight = 0.1
+
+[[move]]
+name = "DEMove"
+parameters = { gamma0 = 1 }
+weight = 0.1
+
+[[move]]
+name = "DESnookerMove"
+parameters = { }
+weight = 0.1
+    """
+    config = toml.loads(default_config)["move"]
+    if args["--config"]:
+        config_path = Path(args["--config"])
         if config_path.exists():
             console.print(f"Found config: {config_path}")
             try:
-                moves = load_moves(config_path)
+                config = toml.loads(config_path.read_text())["move"]
             except:
                 error_console.print("Config file invalid")
         else:
             error_console.print(f"File not found: {config_path}")
+    moves = load_moves(config)
 
     pool = None
     if int(args['--ncores']) > 1 or args['--mpi']:
@@ -230,13 +258,17 @@ def run_mcmc():
                 continue
             
             # check the config file and update move list if it has changed!
-            if args['--config']:
-                config_path = Path(args['--config'])
+
+            if args["--config"]:
+                config_path = Path(args["--config"])
                 if config_path.exists():
                     try:
-                        moves = load_moves(config_path)
+                        config = toml.loads(config_path.read_text())["move"]
                     except:
                         error_console.print("Config file invalid")
+                else:
+                    error_console.print(f"File not found: {config_path}")
+            moves = load_moves(config)
             sampler._moves, sampler._weights = zip(*moves)
 
 
