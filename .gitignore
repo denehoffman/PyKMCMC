@@ -168,3 +168,4 @@ pyrightconfig.json
 *.h5
 config.toml
 *.txt
+.DS_Store
