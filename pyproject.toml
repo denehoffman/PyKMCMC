@@ -27,7 +27,9 @@ tomli = "^2.0.1"
 
 [tool.poetry.scripts]
 kmcmc = 'pykmcmc.mcmc:run_mcmc'
-kplot = 'pykmcmc.plotter:plot_mcmc'
+kplot = 'pykmcmc.plotter:plotter'
+kmonitor = 'pykmcmc.monitor:monitor'
+kopt = 'pykmcmc.optimize:optimize'
 
 
 [tool.poetry.group.dev.dependencies]
