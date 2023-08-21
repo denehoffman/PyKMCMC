@@ -55,17 +55,66 @@ class Dataset:
                     a2_bw_rc,
                     d_wave,
                     weight):
-        f0_P_c = amp.f0.P_c(mass**2, cx_beta_r[0:5])
-        f2_P_c = amp.f2.P_c(mass**2, cx_beta_r[5:9], f2_bw_rc)
-        a0_P_c = amp.a0.P_c(mass**2, cx_beta_r[9:11])
-        a2_P_c = amp.a2.P_c(mass**2, cx_beta_r[11:13], a2_bw_rc)
-        f0_term = amp.Amplitude.calculate(f0_ikc_inv, f0_P_c)
-        f2_term = amp.Amplitude.calculate(f2_ikc_inv, f2_P_c)
-        a0_term = amp.Amplitude.calculate(a0_ikc_inv, a0_P_c)
-        a2_term = amp.Amplitude.calculate(a2_ikc_inv, a2_P_c)
         s_wave = jnp.sqrt(1 / (4 * jnp.pi))
-        return weight * jnp.nan_to_num(jnp.abs(s_wave * (f0_term + a0_term)
-                                               + d_wave * (f2_term + a2_term))**2)
+        f0_P_c = amp.f0.P_c(mass**2, cx_beta_r[0:5])
+        f0_term = amp.Amplitude.calculate(f0_ikc_inv, f0_P_c) * s_wave
+        f2_P_c = amp.f2.P_c(mass**2, cx_beta_r[5:9], f2_bw_rc)
+        f2_term = amp.Amplitude.calculate(f2_ikc_inv, f2_P_c) * d_wave
+        a0_P_c = amp.a0.P_c(mass**2, cx_beta_r[9:11])
+        a0_term = amp.Amplitude.calculate(a0_ikc_inv, a0_P_c) * s_wave
+        a2_P_c = amp.a2.P_c(mass**2, cx_beta_r[11:13], a2_bw_rc)
+        a2_term = amp.Amplitude.calculate(a2_ikc_inv, a2_P_c) * d_wave
+        return weight * jnp.nan_to_num(jnp.abs(f0_term + a0_term + f2_term + a2_term)**2)
+
+    @staticmethod
+    @jit
+    def single_calc_f0(cx_beta_r,
+                       mass,
+                       f0_ikc_inv,
+                       weight):
+        s_wave = jnp.sqrt(1 / (4 * jnp.pi))
+        f0_P_c = amp.f0.P_c(mass**2, cx_beta_r[0:5])
+        f0_term = amp.Amplitude.calculate(f0_ikc_inv, f0_P_c) * s_wave
+        return weight * jnp.nan_to_num(jnp.abs(f0_term)**2)
+
+
+    @staticmethod
+    @jit
+    def single_calc_f2(cx_beta_r,
+                       mass,
+                       f2_ikc_inv,
+                       f2_bw_rc,
+                       d_wave,
+                       weight):
+        f2_P_c = amp.f2.P_c(mass**2, cx_beta_r[5:9], f2_bw_rc)
+        f2_term = amp.Amplitude.calculate(f2_ikc_inv, f2_P_c) * d_wave
+        return weight * jnp.nan_to_num(jnp.abs(f2_term)**2)
+
+
+    @staticmethod
+    @jit
+    def single_calc_a0(cx_beta_r,
+                       mass,
+                       a0_ikc_inv,
+                       weight):
+        s_wave = jnp.sqrt(1 / (4 * jnp.pi))
+        a0_P_c = amp.a0.P_c(mass**2, cx_beta_r[9:11])
+        a0_term = amp.Amplitude.calculate(a0_ikc_inv, a0_P_c) * s_wave
+        return weight * jnp.nan_to_num(jnp.abs(a0_term)**2)
+
+
+    @staticmethod
+    @jit
+    def single_calc_a2(cx_beta_r,
+                       mass,
+                       a2_ikc_inv,
+                       a2_bw_rc,
+                       d_wave,
+                       weight):
+        a2_P_c = amp.a2.P_c(mass**2, cx_beta_r[11:13], a2_bw_rc)
+        a2_term = amp.Amplitude.calculate(a2_ikc_inv, a2_P_c) * d_wave
+        return weight * jnp.nan_to_num(jnp.abs(a2_term)**2)
+
 
     def calc(self, cx_beta_r):
         return jnp.sum(vmap(Dataset.single_calc,
@@ -79,6 +128,56 @@ class Dataset:
                                                                        self.a2_bw_rc,
                                                                        self.d_wave,
                                                                        self.weight))
+
+
+    def calc_weights(self, cx_beta_r):
+        return jnp.array(vmap(Dataset.single_calc,
+                         in_axes=(None, 0, 0, 0, 0, 0, 0, 0, 0, 0))(cx_beta_r,
+                                                                    self.mass,
+                                                                    self.f0_ikc_inv,
+                                                                    self.f2_ikc_inv,
+                                                                    self.a0_ikc_inv,
+                                                                    self.a2_ikc_inv,
+                                                                    self.f2_bw_rc,
+                                                                    self.a2_bw_rc,
+                                                                    self.d_wave,
+                                                                    self.weight))
+
+
+    def calc_weights_f0(self, cx_beta_r):
+        return jnp.array(vmap(Dataset.single_calc_f0,
+                              in_axes=(None, 0, 0, 0))(cx_beta_r,
+                                                       self.mass,
+                                                       self.f0_ikc_inv,
+                                                       self.weight))
+
+
+    def calc_weights_f2(self, cx_beta_r):
+        return jnp.array(vmap(Dataset.single_calc_f2,
+                              in_axes=(None, 0, 0, 0, 0, 0))(cx_beta_r,
+                                                          self.mass,
+                                                          self.f2_ikc_inv,
+                                                          self.f2_bw_rc,
+                                                          self.d_wave,
+                                                          self.weight))
+
+    def calc_weights_a0(self, cx_beta_r):
+        return jnp.array(vmap(Dataset.single_calc_a0,
+                              in_axes=(None, 0, 0, 0))(cx_beta_r,
+                                                       self.mass,
+                                                       self.a0_ikc_inv,
+                                                       self.weight))
+
+
+    def calc_weights_a2(self, cx_beta_r):
+        return jnp.array(vmap(Dataset.single_calc_a2,
+                              in_axes=(None, 0, 0, 0, 0, 0))(cx_beta_r,
+                                                       self.mass,
+                                                       self.a2_ikc_inv,
+                                                       self.a2_bw_rc,
+                                                       self.d_wave,
+                                                       self.weight))
+
 
     @staticmethod
     def single_calc_log(cx_beta_r,
