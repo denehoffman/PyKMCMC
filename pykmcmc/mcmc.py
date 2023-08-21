@@ -7,6 +7,7 @@ Options:
     -f --force                   Force overwrite if the output file already exists
     -s --steps <steps>           Number of steps [default: 500]
     -w --walkers <walkers>       Number of walkers [default: 70]
+    -c --config <config>         TOML configuration file to set moves
     --ngen <ngen>                Size of generated Monte Carlo (defaults to accepted size)
     --seed <seed>                Seed value for random number generator
     --mass-branch <branch>       Branch name for mass [default: M_FinalState]
@@ -25,6 +26,15 @@ Notes:
       option is not provided.
     - If the <seed> is not specified, it will default to a random integer determined
       by the system time.
+    - The move config should be specified with the following (example) structure:
+        [[move]]
+        name = "DEMove"  # name of move in emcee.moves
+        parameters = { sigma = 1e-3 }  # parameter overrides (leave = {} for default)
+        weight = 0.4  # probability for emcee to use this move
+        
+        [[move]]
+        ...
+      and so on.
 
 Examples:
     kmcmc data.root accmc.root -o mychain.h5 -s 100
@@ -51,6 +61,22 @@ from pathlib import Path
 from datetime import datetime
 import schwimmbad
 from docopt import docopt
+try:
+    import tomllib as toml
+except ImportError:
+    import tomli as toml
+
+def load_moves(config_path):
+    moves = []
+    config = toml.loads(config_path.read_text())['move']
+    for move_data in config:
+        move_name = move_data['name']
+        move_class = getattr(emcee.moves, move_name)
+        move_params = move_data['parameters']
+        move_weight = move_data['weight']
+        move_instance = move_class(**move_params)
+        moves.append((move_instance, move_weight))
+    return moves
 
 def run_mcmc():
     args = docopt(__doc__)
@@ -139,6 +165,45 @@ def run_mcmc():
         (emcee.moves.DEMove(gamma0=1), 0.1), # jump
         (emcee.moves.DESnookerMove(), 0.1),
     ]
+    default_config = """
+[[move]]
+name = "StretchMove"
+parameters = { }
+weight = 0.3
+
+[[move]]
+name = "DEMove"
+parameters = { sigma = 1e-3 }
+weight = 0.4
+
+[[move]]
+name = "DEMove"
+parameters = { sigma = 10 }
+weight = 0.1
+
+[[move]]
+name = "DEMove"
+parameters = { gamma0 = 1 }
+weight = 0.1
+
+[[move]]
+name = "DESnookerMove"
+parameters = { }
+weight = 0.1
+    """
+    config = toml.loads(default_config)["move"]
+    if args["--config"]:
+        config_path = Path(args["--config"])
+        if config_path.exists():
+            console.print(f"Found config: {config_path}")
+            try:
+                config = toml.loads(config_path.read_text())["move"]
+            except:
+                error_console.print("Config file invalid")
+        else:
+            error_console.print(f"File not found: {config_path}")
+    moves = load_moves(config)
+
     pool = None
     if int(args['--ncores']) > 1 or args['--mpi']:
         os.environ["OMP_NUM_THREADS"] = "1"  # turn off numpy parallelization
@@ -191,6 +256,21 @@ def run_mcmc():
             # check/log important info every 10 steps
             if sampler.iteration % 10:
                 continue
+            
+            # check the config file and update move list if it has changed!
+
+            if args["--config"]:
+                config_path = Path(args["--config"])
+                if config_path.exists():
+                    try:
+                        config = toml.loads(config_path.read_text())["move"]
+                    except:
+                        error_console.print("Config file invalid")
+                else:
+                    error_console.print(f"File not found: {config_path}")
+            moves = load_moves(config)
+            sampler._moves, sampler._weights = zip(*moves)
+
 
             # grab tau and see if tau * 100 < i_step for all walkers
             tau = sampler.get_autocorr_time(tol=0)
