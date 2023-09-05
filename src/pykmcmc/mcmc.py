@@ -50,6 +50,7 @@ Examples:
 
 import os
 import sys
+import tomllib as toml
 from datetime import datetime
 from pathlib import Path
 
@@ -64,11 +65,6 @@ from rich.table import Table
 import pykmcmc.likelihood
 import pykmcmc.moves
 import pykmcmc.reader
-
-try:
-    import tomllib as toml
-except ImportError:
-    import tomli as toml
 
 
 def load_moves(config):

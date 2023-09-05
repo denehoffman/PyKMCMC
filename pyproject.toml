@@ -1,40 +1,36 @@
-[tool.poetry]
-name = "pykmcmc"
-version = "0.1.0a2"
+[project]
+name = "PyKMCMC"
+version = "0.1.0"
 description = ""
-authors = ["Nathaniel D. Hoffman <dene@cmu.edu>"]
+authors = [
+    {name = "Nathaniel D. Hoffman", email = "dene@cmu.edu"},
+]
+dependencies = [
+    "numpy>=1.25.2",
+    "uproot>=5.0.11",
+    "pandas>=2.1.0",
+    "jax[cpu]>=0.4.14",
+    "zeus-mcmc>=2.5.4",
+    "rich>=13.5.2",
+    "emcee>=3.1.4",
+    "docopt-ng>=0.9.0",
+    "schwimmbad>=0.3.2",
+    "h5py>=3.9.0",
+    "codetiming>=1.4.0",
+]
+requires-python = ">=3.11"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "<3.12,>=3.9"
-numpy = "^1.25.2"
-uproot = "^5.0.10"
-scipy = "^1.11.1"
-docopt-ng = "^0.9.0"
-rich = "^13.5.2"
-codetiming = "^1.4.0"
-jax = {extras = ["cpu"], version = "^0.4.14"}
-emcee = "^3.1.4"
-matplotlib = "^3.7.2"
-corner = "^2.2.2"
-tqdm = "^4.65.0"
-h5py = "^3.9.0"
-prism-plot = "^1.6"
-schwimmbad = "^0.3.2"
-enrich = "^1.2.7"
-arviz = "^0.16.1"
-tomli = "^2.0.1"
-
-[tool.poetry.scripts]
-kmcmc = 'pykmcmc.mcmc:run_mcmc'
-kplot = 'pykmcmc.plotter:plotter'
-kmonitor = 'pykmcmc.monitor:monitor'
-kopt = 'pykmcmc.optimize:optimize'
-
-
-[tool.poetry.group.dev.dependencies]
-bpython = "^0.24"
+license = {text = "MIT"}
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.scripts]
+kmcmc = {call = 'pykmcmc.mcmc:run_mcmc'}
+kplot = {call = 'pykmcmc.plotter:plotter'}
+kmonitor = {call = 'pykmcmc.monitor:monitor'}
+kzeus = {call = 'pykmcmc.zeus:run_zeus'}
+
+[tool.pyright]
+extraPaths = ["__pypackages__/3.11/lib/"]
