@@ -17,6 +17,9 @@ dependencies = [
     "schwimmbad>=0.3.2",
     "h5py>=3.9.0",
     "codetiming>=1.4.0",
+    "corner>=2.2.2",
+    "iminuit>=2.24.0",
+    "watchdog>=3.0.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -31,6 +34,9 @@ kmcmc = {call = 'pykmcmc.mcmc:run_mcmc'}
 kplot = {call = 'pykmcmc.plotter:plotter'}
 kmonitor = {call = 'pykmcmc.monitor:monitor'}
 kzeus = {call = 'pykmcmc.zeus:run_zeus'}
+kzplot = {call = 'pykmcmc.zplot:zplot'}
+kfit = {call = 'pykmcmc.fit:run_fit'}
+kwatch = {call = 'pykmcmc.live:watch'}
 
 [tool.pyright]
 extraPaths = ["__pypackages__/3.11/lib/"]

@@ -1,11 +1,9 @@
 """
-Usage: zeus [options] <data> <accmc>
+Usage: fit [options] <data> <accmc>
 
 Options:
+    -o --output <output>         Output file name ending with '.h5' [default: chain.h5]
     -f --force                   Force overwrite if the output file already exists
-    -s --steps <steps>           Number of steps [default: 1000]
-    -b --burn <steps>            Number of burn-in steps [default: 500]
-    -w --walkers <walkers>       Number of walkers [default: 200]
     --ngen <ngen>                Size of generated Monte Carlo (defaults to accepted size)
     --seed <seed>                Seed value for random number generator
     --mass-branch <branch>       Branch name for mass [default: M_FinalState]
@@ -20,11 +18,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import h5py
+import jax
 import matplotlib.pyplot as plt
 import numpy as np
-import zeus
 from docopt import docopt
+from iminuit import Minuit
 from jax import random
 from rich.console import Console
 
@@ -32,7 +30,7 @@ import pykmcmc.likelihood
 import pykmcmc.reader
 
 
-def run_zeus():
+def run_fit():
     args = docopt(__doc__)
     console = Console(quiet=args["--silent"], record=True)
     error_console = Console(stderr=True, style="bold red")
@@ -50,7 +48,7 @@ def run_zeus():
     if not accmc_path.suffix == ".root":
         error_console.print(f"Monte Carlo path must be a .root file ({accmc_path})")
         sys.exit(1)
-    output_path = Path("chains.h5")
+    output_path = Path(args["--output"])
     if output_path.exists() and not args["--force"]:
         error_console.print(
             f"The file {output_path} already exists, use --force to override"
@@ -82,46 +80,65 @@ def run_zeus():
 
     # Create our likelihood function
     likelihood = pykmcmc.likelihood.Likelihood(data, accmc, ngen)
-
-    ndim = 23
-    nwalkers = int(args["--walkers"])
-    steps = int(args["--steps"])
-
-    if not Path("burn_chains.h5").exists():
-        burn = int(args["--burn"])
-
-        if args["--seed"]:
-            seed = int(args["--seed"])
-        else:
-            seed = int(datetime.now().timestamp() * 1_000_000)
-        key = random.PRNGKey(seed)
-        p0 = random.ball(key, d=ndim, shape=(nwalkers,)) * 1000
-        sampler = zeus.EnsembleSampler(nwalkers, ndim, likelihood.log_likelihood)
-        save_burn_callback = zeus.callbacks.SaveProgressCallback(
-            "burn_chains.h5", ncheck=10
-        )
-        burn_ac_callback = zeus.callbacks.AutocorrelationCallback(
-            ncheck=10, trigger=False
-        )
-        burn_gr_callback = zeus.callbacks.SplitRCallback(ncheck=10, trigger=False)
-        # min_iter_callback = zeus.callbacks.MinIterCallback(nmin=500)
-        sampler.run_mcmc(
-            p0, burn, callbacks=[save_burn_callback, burn_ac_callback, burn_gr_callback]
-        )
-        Path("burn_AC.txt").write_text("\n".join(map(str, burn_ac_callback.estimates)))
-        Path("burn_GR.txt").write_text("\n".join(map(str, burn_gr_callback.estimates)))
-        burn_chain = sampler.get_chain()
-    else:
-        console.print("Loading burn-in from file...")
-        with h5py.File("burn_chains.h5", "r") as hf:
-            burn_chain = np.copy(hf["samples"])
-    p1 = burn_chain[-1]
-    save_callback = zeus.callbacks.SaveProgressCallback("chains.h5", ncheck=10)
-    ac_callback = zeus.callbacks.AutocorrelationCallback(ncheck=10, trigger=False)
-    gr_callback = zeus.callbacks.SplitRCallback(ncheck=10, trigger=False)
-    sampler = zeus.EnsembleSampler(
-        nwalkers, ndim, likelihood.log_likelihood, moves=zeus.moves.GlobalMove()
+    init = np.random.rand(23) * 300
+    grad_nll = jax.grad(likelihood.negative_log_likelihood)
+    nll = likelihood.negative_log_likelihood
+    with console.status("Compiling NLL..."):
+        val = nll(init)
+        console.print(f"Done! NLL(init) = {val}")
+    with console.status("Compiling grad(NLL)..."):
+        val = grad_nll(init)
+        console.print(f"Done! ∇NLL(init) = {val}")
+    m = Minuit(nll, init, grad=grad_nll)
+    m.errordef = Minuit.LIKELIHOOD
+    m.strategy = 0
+    m.migrad()
+    print(m)
+    best_pars = np.array(m.values)
+    fit_weights = accmc.calc_weights(best_pars)
+    fw_sum = np.sum(fit_weights)
+    dw_sum = np.sum(data.weight)
+    bins = 70
+    f0_weights = accmc.calc_weights_f0(best_pars)
+    f2_weights = accmc.calc_weights_f2(best_pars)
+    a0_weights = accmc.calc_weights_a0(best_pars)
+    a2_weights = accmc.calc_weights_a2(best_pars)
+    plt.hist(data.mass, weights=data.weight, bins=bins, histtype="step", label="Data")
+    plt.hist(
+        accmc.mass,
+        weights=fit_weights / fw_sum * dw_sum,
+        bins=bins,
+        histtype="step",
+        label="Fit",
     )
-    sampler.run_mcmc(p1, steps, callbacks=[save_callback, ac_callback, gr_callback])
-    Path("AC.txt").write_text("\n".join(map(str, ac_callback.estimates)))
-    Path("GR.txt").write_text("\n".join(map(str, gr_callback.estimates)))
+    plt.hist(
+        accmc.mass,
+        weights=f0_weights / fw_sum * dw_sum,
+        bins=bins,
+        histtype="step",
+        label="Fit f0",
+    )
+    plt.hist(
+        accmc.mass,
+        weights=f2_weights / fw_sum * dw_sum,
+        bins=bins,
+        histtype="step",
+        label="Fit f2",
+    )
+    plt.hist(
+        accmc.mass,
+        weights=a0_weights / fw_sum * dw_sum,
+        bins=bins,
+        histtype="step",
+        label="Fit a0",
+    )
+    plt.hist(
+        accmc.mass,
+        weights=a2_weights / fw_sum * dw_sum,
+        bins=bins,
+        histtype="step",
+        label="Fit a2",
+    )
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("bestplot_minuit.svg")
